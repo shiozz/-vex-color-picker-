@@ -132,9 +132,13 @@
 
   function hsbToRgb(h, s, v) {
     s /= 100; v /= 100;
-    const k = n => (n + h / 60) % 6;
-    const f = n => v - v * s * Math.max(0, Math.min(k(n), 4 - k(n), 1));
-    return [f(5), f(3), f(1)];
+    const i = Math.floor(h / 60) % 6;
+    const f = h / 60 - Math.floor(h / 60);
+    const p = v * (1 - s);
+    const q = v * (1 - f * s);
+    const t = v * (1 - (1 - f) * s);
+    const cases = [[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]];
+    return cases[i];
   }
 
   function update() {
@@ -160,15 +164,34 @@
   bSlider.addEventListener('input', update);
 
   copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(output.textContent).then(() => {
-      copyBtn.textContent = 'COPIED';
-      copyBtn.classList.add('copied');
-      setTimeout(() => {
-        copyBtn.textContent = 'COPY';
-        copyBtn.classList.remove('copied');
-      }, 1500);
-    });
+    const text = output.textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showCopied).catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
   });
+
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); showCopied(); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+
+  function showCopied() {
+    copyBtn.textContent = 'COPIED';
+    copyBtn.classList.add('copied');
+    setTimeout(() => {
+      copyBtn.textContent = 'COPY';
+      copyBtn.classList.remove('copied');
+    }, 1500);
+  }
 
   update();
 </script>
