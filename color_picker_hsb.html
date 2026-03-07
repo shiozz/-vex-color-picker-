@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Color Picker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { background: #0e0e10; color: #fff; font-family: 'JetBrains Mono', 'Courier New', monospace; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 20px; gap: 28px; }
+
+  #preview {
+    width: 100%;
+    max-width: 380px;
+    height: 120px;
+    border-radius: 12px;
+    background: #ff0000;
+    transition: background 0.05s;
+  }
+
+  .picker-wrap {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .slider-label {
+    font-size: 11px;
+    color: #555;
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 6px rgba(0,0,0,0.6);
+    cursor: pointer;
+  }
+
+  #h-slider {
+    background: linear-gradient(to right,
+      hsl(0,100%,50%), hsl(30,100%,50%), hsl(60,100%,50%),
+      hsl(90,100%,50%), hsl(120,100%,50%), hsl(150,100%,50%),
+      hsl(180,100%,50%), hsl(210,100%,50%), hsl(240,100%,50%),
+      hsl(270,100%,50%), hsl(300,100%,50%), hsl(330,100%,50%), hsl(360,100%,50%));
+  }
+
+  #output {
+    width: 100%;
+    max-width: 380px;
+    background: #16161a;
+    border: 1px solid #2a2a30;
+    border-radius: 10px;
+    padding: 18px 20px;
+    font-size: 17px;
+    color: #e8c97a;
+    letter-spacing: 0.03em;
+    text-align: center;
+    cursor: pointer;
+    user-select: all;
+    transition: border-color 0.2s;
+  }
+
+  #copy-btn {
+    width: 100%;
+    max-width: 380px;
+    background: #1e1e24;
+    border: 1px solid #2a2a30;
+    border-radius: 10px;
+    padding: 16px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  #copy-btn.copied { color: #a8e87a; border-color: #a8e87a; }
+</style>
+</head>
+<body>
+
+<div id="preview"></div>
+
+<div class="picker-wrap">
+  <div class="slider-row">
+    <span class="slider-label">H</span>
+    <input type="range" id="h-slider" min="0" max="360" value="0">
+  </div>
+  <div class="slider-row">
+    <span class="slider-label">S</span>
+    <input type="range" id="s-slider" min="0" max="100" value="100">
+  </div>
+  <div class="slider-row">
+    <span class="slider-label">B</span>
+    <input type="range" id="b-slider" min="0" max="100" value="100">
+  </div>
+</div>
+
+<div id="output">{1.000, 0.000, 0.000}</div>
+<button id="copy-btn">COPY</button>
+
+<script>
+  const hSlider = document.getElementById('h-slider');
+  const sSlider = document.getElementById('s-slider');
+  const bSlider = document.getElementById('b-slider');
+  const preview = document.getElementById('preview');
+  const output = document.getElementById('output');
+  const copyBtn = document.getElementById('copy-btn');
+
+  function hsbToRgb(h, s, v) {
+    s /= 100; v /= 100;
+    const k = n => (n + h / 60) % 6;
+    const f = n => v - v * s * Math.max(0, Math.min(k(n), 4 - k(n), 1));
+    return [f(5), f(3), f(1)];
+  }
+
+  function update() {
+    const h = parseInt(hSlider.value);
+    const s = parseInt(sSlider.value);
+    const b = parseInt(bSlider.value);
+
+    const [r, g, bl] = hsbToRgb(h, s, b);
+    const ri = Math.round(r * 255);
+    const gi = Math.round(g * 255);
+    const bi = Math.round(bl * 255);
+
+    preview.style.background = `rgb(${ri},${gi},${bi})`;
+
+    sSlider.style.background = `linear-gradient(to right, hsl(${h},0%,${b}%), hsl(${h},100%,${b/2 + b*s/200}%))`;
+    bSlider.style.background = `linear-gradient(to right, #000, hsl(${h},${s}%,50%))`;
+
+    output.textContent = `{${r.toFixed(3)}, ${g.toFixed(3)}, ${bl.toFixed(3)}}`;
+  }
+
+  hSlider.addEventListener('input', update);
+  sSlider.addEventListener('input', update);
+  bSlider.addEventListener('input', update);
+
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(output.textContent).then(() => {
+      copyBtn.textContent = 'COPIED';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = 'COPY';
+        copyBtn.classList.remove('copied');
+      }, 1500);
+    });
+  });
+
+  update();
+</script>
+</body>
+</html>
